@@ -1,5 +1,7 @@
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, viewsets, status, serializers
+from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django.db import IntegrityError
 
 from .models import Pool, Request
 from .serializers import PoolSerializer, RequestSerializer
@@ -22,4 +24,11 @@ class RequestViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         pool_id = self.kwargs.get('pool_pk')
         pool = get_object_or_404(Pool, pk=pool_id)
-        serializer.save(pool=pool)
+        try:
+            serializer.save(pool=pool)
+        except IntegrityError as e:
+            if 'UNIQUE constraint failed' in str(e) and 'pool_id' in str(e) and 'email' in str(e):
+                raise serializers.ValidationError({
+                    'email': 'This email has already joined this pool.'
+                })
+            raise

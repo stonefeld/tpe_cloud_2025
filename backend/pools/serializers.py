@@ -13,3 +13,4 @@ class RequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Request
         fields = ["id", "pool", "email", "quantity", "created_at"]
+        read_only_fields = ["pool"]  # Pool is set automatically in perform_create

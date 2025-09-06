@@ -5,9 +5,9 @@
         <v-card>
           <v-card-title class="text-h4 text-center pa-8">
             Welcome to
-            <v-span class="font-weight-bold text-primary">
-              Group By Sharing!
-            </v-span>
+            <span class="font-weight-bold text-primary">
+              Group By Sharing
+            </span>
           </v-card-title>
           <v-card-text class="text-center pa-8">
             <p class="text-h6 mb-4">

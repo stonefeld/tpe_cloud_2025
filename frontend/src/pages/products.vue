@@ -26,7 +26,7 @@
               :loading="loading"
             >
               <template #item.unit_price="{ item }">
-                ${{ item.unit_price.toFixed(2) }}
+                ${{ item.unit_price }}
               </template>
 
               <template #item.created_at="{ item }">

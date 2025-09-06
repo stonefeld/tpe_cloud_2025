@@ -1,8 +1,6 @@
 #!/usr/bin/env sh
 set -e
-
-cd /app/tpe_cloud
-
-uv run python manage.py migrate --noinput
-
+cd /grupi
+python manage.py collectstatic --noinput
+python manage.py migrate --noinput
 exec "$@"

@@ -5,8 +5,8 @@ from products.models import Product
 
 class Pool(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="pools")
-    start_at = models.DateTimeField()
-    end_at = models.DateTimeField()
+    start_at = models.DateField()
+    end_at = models.DateField()
     min_quantity = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -81,14 +81,14 @@
         <v-card-text>
           <v-form ref="form" v-model="valid">
             <v-text-field
-              v-model="form.email"
+              v-model="formEmail"
               label="Email"
               required
               :rules="emailRules"
               type="email"
             />
             <v-text-field
-              v-model="form.quantity"
+              v-model="formQuantity"
               label="Quantity"
               min="1"
               required
@@ -138,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { poolApi, productApi, type Request, requestApi } from "@/services/api";
 
@@ -169,10 +169,8 @@ const requestToDelete = ref<number | null>(null);
 const selectedPoolName = ref("");
 
 // Form data
-const form = ref({
-  email: "",
-  quantity: 1,
-});
+const formEmail = ref("");
+const formQuantity = ref(1);
 
 // Validation rules
 const emailRules = [
@@ -230,20 +228,21 @@ async function loadPoolName() {
 function openCreateDialog() {
   isEditing.value = false;
   editingRequestId.value = null;
-  form.value = {
-    email: "",
-    quantity: 1,
-  };
+  formEmail.value = "";
+  formQuantity.value = 1;
+  valid.value = false;
   dialog.value = true;
 }
 
-function openEditDialog(request: Request) {
+async function openEditDialog(request: Request) {
   isEditing.value = true;
   editingRequestId.value = request.id;
-  form.value = {
-    email: request.email,
-    quantity: request.quantity,
-  };
+  formEmail.value = request.email;
+  formQuantity.value = request.quantity;
+  // Reset form validation state
+  valid.value = false;
+  // Wait for DOM to update before opening dialog
+  await nextTick();
   dialog.value = true;
 }
 
@@ -251,10 +250,8 @@ function closeDialog() {
   dialog.value = false;
   isEditing.value = false;
   editingRequestId.value = null;
-  form.value = {
-    email: "",
-    quantity: 1,
-  };
+  formEmail.value = "";
+  formQuantity.value = 1;
 }
 
 async function saveRequest() {
@@ -267,12 +264,12 @@ async function saveRequest() {
   try {
     await (isEditing.value && editingRequestId.value
       ? requestApi.update(poolId.value, editingRequestId.value, {
-          email: form.value.email,
-          quantity: Number.parseInt(form.value.quantity.toString()),
+          email: formEmail.value,
+          quantity: Number.parseInt(formQuantity.value.toString()),
         })
       : requestApi.create(poolId.value, {
-          email: form.value.email,
-          quantity: Number.parseInt(form.value.quantity.toString()),
+          email: formEmail.value,
+          quantity: Number.parseInt(formQuantity.value.toString()),
         }));
     closeDialog();
     await loadRequests();

@@ -63,20 +63,20 @@
         <v-card-text>
           <v-form ref="form" v-model="valid">
             <v-text-field
-              v-model="form.name"
+              v-model="formName"
               label="Product Name"
               required
               :rules="[(v) => !!v || 'Name is required']"
             />
 
             <v-textarea
-              v-model="form.description"
+              v-model="formDescription"
               label="Description"
               rows="3"
             />
 
             <v-text-field
-              v-model="form.unit_price"
+              v-model="formUnitPrice"
               label="Unit Price"
               min="0"
               required
@@ -136,7 +136,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { onMounted, ref } from 'vue'
+  import { onMounted, ref, nextTick } from 'vue'
   import { type Product, productApi } from '@/services/api'
 
   const products = ref<Product[]>([])
@@ -147,11 +147,9 @@
   const deleteDialog = ref(false)
   const valid = ref(false)
   const isEditing = ref(false)
-  const form = ref({
-    name: '',
-    description: '',
-    unit_price: '',
-  })
+  const formName = ref('')
+  const formDescription = ref('')
+  const formUnitPrice = ref('')
   const productToDelete = ref<number | null>(null)
   const editingProductId = ref<number | null>(null)
 
@@ -180,33 +178,32 @@
   function openCreateDialog () {
     isEditing.value = false
     editingProductId.value = null
-    form.value = {
-      name: '',
-      description: '',
-      unit_price: '',
-    }
+    formName.value = ''
+    formDescription.value = ''
+    formUnitPrice.value = ''
+    valid.value = false
     dialog.value = true
   }
 
-  function openEditDialog (product: Product) {
+  async function openEditDialog (product: Product) {
     isEditing.value = true
     editingProductId.value = product.id
-    form.value = {
-      name: product.name,
-      description: product.description,
-      unit_price: product.unit_price.toString(),
-    }
+    formName.value = product.name
+    formDescription.value = product.description
+    formUnitPrice.value = product.unit_price.toString()
+    // Reset form validation state
+    valid.value = false
+    // Wait for DOM to update before opening dialog
+    await nextTick()
     dialog.value = true
   }
 
   function closeDialog () {
     dialog.value = false
     editingProductId.value = null
-    form.value = {
-      name: '',
-      description: '',
-      unit_price: '',
-    }
+    formName.value = ''
+    formDescription.value = ''
+    formUnitPrice.value = ''
   }
 
   async function saveProduct () {
@@ -219,9 +216,9 @@
     saving.value = true
     try {
       const productData = {
-        name: form.value.name,
-        description: form.value.description,
-        unit_price: Number.parseFloat(form.value.unit_price), // Convert to number for decimal field
+        name: formName.value,
+        description: formDescription.value,
+        unit_price: Number.parseFloat(formUnitPrice.value), // Convert to number for decimal field
       }
       console.log('Sending product data:', productData)
 

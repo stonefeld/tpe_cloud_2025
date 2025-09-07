@@ -85,7 +85,7 @@
         <v-card-text>
           <v-form ref="form" v-model="valid">
             <v-select
-              v-model="form.product"
+              v-model="formProduct"
               item-title="name"
               item-value="id"
               :items="products"
@@ -95,23 +95,23 @@
             />
 
             <v-text-field
-              v-model="form.start_at"
-              label="Start Date & Time"
+              v-model="formStartAt"
+              label="Start Date"
               required
               :rules="[v => !!v || 'Start date is required']"
-              type="datetime-local"
+              type="date"
             />
 
             <v-text-field
-              v-model="form.end_at"
-              label="End Date & Time"
+              v-model="formEndAt"
+              label="End Date"
               required
               :rules="[v => !!v || 'End date is required']"
-              type="datetime-local"
+              type="date"
             />
 
             <v-text-field
-              v-model="form.min_quantity"
+              v-model="formMinQuantity"
               label="Minimum Quantity"
               min="1"
               required
@@ -207,7 +207,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, onMounted, ref, nextTick } from 'vue'
   import { useRouter } from 'vue-router'
   import { type Pool, poolApi, type Product, productApi, requestApi } from '@/services/api'
 
@@ -224,12 +224,10 @@
   const valid = ref(false)
   const joinValid = ref(false)
   const isEditing = ref(false)
-  const form = ref({
-    product: null as number | null,
-    start_at: '',
-    end_at: '',
-    min_quantity: 1,
-  })
+  const formProduct = ref<number | null>(null)
+  const formStartAt = ref('')
+  const formEndAt = ref('')
+  const formMinQuantity = ref(1)
   const joinForm = ref({
     email: '',
     quantity: 1,
@@ -284,24 +282,25 @@
   function openCreateDialog () {
     isEditing.value = false
     editingPoolId.value = null
-    form.value = {
-      product: null,
-      start_at: '',
-      end_at: '',
-      min_quantity: 1,
-    }
+    formProduct.value = null
+    formStartAt.value = ''
+    formEndAt.value = ''
+    formMinQuantity.value = 1
+    valid.value = false
     dialog.value = true
   }
 
-  function openEditDialog (pool: Pool) {
+  async function openEditDialog (pool: Pool) {
     isEditing.value = true
     editingPoolId.value = pool.id
-    form.value = {
-      product: pool.product,
-      start_at: formatDateTimeForInput(pool.start_at),
-      end_at: formatDateTimeForInput(pool.end_at),
-      min_quantity: pool.min_quantity,
-    }
+    formProduct.value = pool.product
+    formStartAt.value = formatDateForInput(pool.start_at)
+    formEndAt.value = formatDateForInput(pool.end_at)
+    formMinQuantity.value = pool.min_quantity
+    // Reset form validation state
+    valid.value = false
+    // Wait for DOM to update before opening dialog
+    await nextTick()
     dialog.value = true
   }
 
@@ -317,12 +316,10 @@
   function closeDialog () {
     dialog.value = false
     editingPoolId.value = null
-    form.value = {
-      product: null,
-      start_at: '',
-      end_at: '',
-      min_quantity: 1,
-    }
+    formProduct.value = null
+    formStartAt.value = ''
+    formEndAt.value = ''
+    formMinQuantity.value = 1
   }
 
   function closeJoinDialog () {
@@ -344,10 +341,10 @@
     saving.value = true
     try {
       const poolData = {
-        product: form.value.product!,
-        start_at: form.value.start_at,
-        end_at: form.value.end_at,
-        min_quantity: Number.parseInt(form.value.min_quantity.toString()), // Ensure it's an integer
+        product: formProduct.value!,
+        start_at: formStartAt.value, // DateField expects YYYY-MM-DD format
+        end_at: formEndAt.value, // DateField expects YYYY-MM-DD format
+        min_quantity: Number.parseInt(formMinQuantity.value.toString()), // Ensure it's an integer
       }
       console.log('Sending pool data:', poolData)
 
@@ -423,17 +420,21 @@
   }
 
   function formatDate (dateString: string) {
-    return new Date(dateString).toLocaleDateString()
+    // Handle both DateField (YYYY-MM-DD) and DateTimeField formats
+    if (dateString.includes('T')) {
+      // DateTimeField format - use existing logic
+      return new Date(dateString).toLocaleDateString()
+    } else {
+      // DateField format (YYYY-MM-DD) - parse as local date to avoid timezone issues
+      const [year, month, day] = dateString.split('-')
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+      return date.toLocaleDateString()
+    }
   }
 
-  function formatDateTimeForInput (dateString: string) {
-    const date = new Date(dateString)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    return `${year}-${month}-${day}T${hours}:${minutes}`
+  function formatDateForInput (dateString: string) {
+    // DateField returns YYYY-MM-DD format directly, no need to extract
+    return dateString
   }
 
   onMounted(async () => {
